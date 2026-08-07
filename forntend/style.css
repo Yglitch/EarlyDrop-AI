@@ -407,3 +407,11 @@
   }
 
   .result-actions{display:flex; gap:12px; justify-content:center; padding-top:4px;}
+
+  /* =========================================================
+     PAGES 4 & 5 — STATIC PAGES (About & Contact)
+  ========================================================= */
+  .static-page{
+    flex:1; display:flex; flex-direction:column;
+    padding:40px 0 72px;
+  }

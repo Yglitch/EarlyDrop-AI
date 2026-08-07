@@ -27,8 +27,8 @@
     </div>
     <nav class="primary" aria-label="Primary">
       <a href="#landing" class="current" data-nav="landing">Home</a>
-      <a href="#about-anchor" data-nav="about">About</a>
-      <a href="#contact-anchor" data-nav="contact">Contact</a>
+      <a href="#about" data-nav="about">About</a>
+      <a href="#contact" data-nav="contact">Contact</a>
     </nav>
   </div>
 </header>
@@ -225,6 +225,81 @@
 </main>
 
 <!-- =========================================================
+     PAGE 4 — ABOUT (Dedicated Page)
+========================================================= -->
+<main id="page-about" class="page">
+  <div class="static-page">
+    <div class="wrap">
+      <a href="#landing" class="back-link" data-nav="landing">← Home</a>
+      <span class="page-title-kicker" style="margin-top:12px; display:block; font-family:var(--font-mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--accent);">Overview</span>
+      <h1 class="page-title" style="font-family:var(--font-display); font-size:2.4rem; font-weight:600; margin:4px 0 16px;">About Pulse</h1>
+      <p class="page-lead" style="font-size:1.05rem; color:var(--ink-soft); max-width:60ch; line-height:1.7; margin-bottom:40px;">Pulse reads day-to-day academic signals — attendance, marks, submissions, financial background — and turns them into an early warning system for educational institutions.</p>
+      
+      <div class="about-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:24px; margin-bottom:48px;">
+        <div class="card about-block" style="padding:28px;">
+          <h3 style="font-family:var(--font-display); font-size:1.2rem; margin-top:0;">Early Intervention</h3>
+          <p style="color:var(--ink-soft); font-size:0.9rem; line-height:1.6;">Designed to help mentors step in weeks before a student disengages permanently, reducing institutional drop-out rates proactively.</p>
+        </div>
+        <div class="card about-block" style="padding:28px;">
+          <h3 style="font-family:var(--font-display); font-size:1.2rem; margin-top:0;">Data-Driven Metrics</h3>
+          <p style="color:var(--ink-soft); font-size:0.9rem; line-height:1.6;">Focuses on core indicators such as academic performance, submission compliance, household background, and financial status.</p>
+        </div>
+        <div class="card about-block" style="padding:28px;">
+          <h3 style="font-family:var(--font-display); font-size:1.2rem; margin-top:0;">Privacy First</h3>
+          <p style="color:var(--ink-soft); font-size:0.9rem; line-height:1.6;">Built strictly for early support and counselling workflows rather than continuous surveillance or punitive tracking.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- =========================================================
+     PAGE 5 — CONTACT (Dedicated Page)
+========================================================= -->
+<main id="page-contact" class="page">
+  <div class="static-page">
+    <div class="wrap">
+      <a href="#landing" class="back-link" data-nav="landing">← Home</a>
+      <span class="page-title-kicker" style="margin-top:12px; display:block; font-family:var(--font-mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--accent);">Get in touch</span>
+      <h1 class="page-title" style="font-family:var(--font-display); font-size:2.4rem; font-weight:600; margin:4px 0 16px;">Contact Support</h1>
+      <p class="page-lead" style="font-size:1.05rem; color:var(--ink-soft); max-width:60ch; line-height:1.7; margin-bottom:40px;">Have questions about integrating Pulse into your campus or need assistance with custom model configurations? Send us a message.</p>
+
+      <div class="contact-layout" style="display:grid; grid-template-columns: 1.2fr 0.8fr; gap:32px; align-items:start; margin-bottom:48px;">
+        <div class="card contact-form-card" style="padding:36px;">
+          <form id="contact-form" novalidate>
+            <div class="field-grid" style="grid-template-columns:1fr; gap:16px; margin-bottom:20px;">
+              <div class="field">
+                <label for="contact-name">Your Name</label>
+                <input type="text" id="contact-name" placeholder="John Doe" required>
+              </div>
+              <div class="field">
+                <label for="contact-email">Email Address</label>
+                <input type="email" id="contact-email" placeholder="john@institution.edu" required>
+              </div>
+              <div class="field">
+                <label for="contact-message">Message</label>
+                <textarea id="contact-message" rows="4" placeholder="How can we help you?" style="font-family:var(--font-body); font-size:0.9rem; padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink);" required></textarea>
+              </div>
+            </div>
+            <button class="btn btn-primary" type="submit">Send Message</button>
+            <div class="success-msg" id="contact-success" style="display:none; color:var(--risk-low); font-size:0.85rem; margin-top:12px; background:var(--risk-low-bg); padding:10px 14px; border-radius:8px;">Thank you! Your message has been sent successfully.</div>
+          </form>
+        </div>
+
+        <div class="card contact-info-card" style="padding:36px;">
+          <h3 style="font-family:var(--font-display); font-size:1.2rem; margin-top:0;">Direct Inquiries</h3>
+          <p style="color:var(--ink-soft); font-size:0.9rem; line-height:1.6; margin-bottom:20px;">You can also reach our core team directly via email or check our code repositories online.</p>
+          <div style="display:flex; flex-direction:column; gap:10px; font-size:0.9rem;">
+            <a href="mailto:hello@pulse-predict.app" style="color:var(--accent); text-decoration:none; font-weight:600;">hello@pulse-predict.app</a>
+            <a href="https://github.com" target="_blank" rel="noopener" style="color:var(--ink); text-decoration:none;">GitHub Repository</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- =========================================================
      FOOTER (shared)
 ========================================================= -->
 <footer class="site">
@@ -244,13 +319,13 @@
         <div class="footer-col">
           <h4>Product</h4>
           <a href="#landing" data-nav="landing">Home</a>
-          <a href="#about-anchor">About</a>
+          <a href="#about" data-nav="about">About</a>
           <a href="#" id="footer-terms">Terms &amp; Conditions</a>
         </div>
-        <div class="footer-col" id="contact-anchor">
+        <div class="footer-col">
           <h4>Contact</h4>
+          <a href="#contact" data-nav="contact">Contact form</a>
           <a href="mailto:hello@pulse-predict.app">Gmail</a>
-          <a href="#" id="footer-contact">Contact form</a>
         </div>
         <div class="footer-col">
           <h4>Elsewhere</h4>
