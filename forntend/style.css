@@ -415,3 +415,75 @@
     flex:1; display:flex; flex-direction:column;
     padding:40px 0 72px;
   }
+  /* =========================================================
+     PROFILE MENU (header, top right)
+  ========================================================= */
+  .profile-menu{
+    position:relative;
+    margin-left:6px;
+    flex-shrink:0;
+  }
+  .profile-btn{
+    appearance:none; cursor:pointer;
+    width:36px; height:36px; border-radius:50%;
+    border:1px solid var(--line);
+    background:var(--bg);
+    display:flex; align-items:center; justify-content:center;
+    color:var(--ink-soft);
+    padding:0;
+    transition:border-color .15s ease, color .15s ease;
+  }
+  .profile-btn:hover{border-color:var(--accent); color:var(--accent);}
+  .profile-btn .avatar{
+    display:flex; align-items:center; justify-content:center;
+    width:100%; height:100%;
+    font-family:var(--font-body); font-weight:700; font-size:0.85rem;
+    color:var(--accent);
+  }
+  .profile-dropdown{
+    display:none;
+    position:absolute; right:0; top:calc(100% + 10px);
+    min-width:200px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:10px;
+    box-shadow:var(--shadow);
+    padding:8px;
+    z-index:30;
+  }
+  .profile-dropdown.open{display:block;}
+  .dropdown-item{
+    display:block; width:100%;
+    text-align:left;
+    appearance:none; border:none; background:none; cursor:pointer;
+    font-family:var(--font-body); font-size:0.87rem; color:var(--ink);
+    text-decoration:none;
+    padding:9px 10px; border-radius:6px;
+  }
+  .dropdown-item:hover{background:var(--bg);}
+  .dropdown-user{
+    padding:8px 10px 10px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:6px;
+  }
+  .dropdown-user .name{display:block; font-size:0.88rem; font-weight:600; color:var(--ink);}
+  .dropdown-user .email{display:block; font-size:0.76rem; color:var(--ink-soft); margin-top:2px;}
+
+  /* Locked (logged-out) state for the high-risk table */
+  .locked-msg{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+    text-align:center;
+    padding:32px 12px;
+    min-height:220px;
+  }
+  .locked-msg p{
+    color:var(--ink-soft); font-size:0.85rem; line-height:1.55; margin:0; max-width:26ch;
+  }
+
+  /* Auth pages (login / register) */
+  .auth-switch{
+    text-align:center; font-size:0.85rem; color:var(--ink-soft);
+    margin:22px 0 0;
+  }
+  .auth-switch a{color:var(--accent); font-weight:600; text-decoration:none;}
+  .auth-switch a:hover{text-decoration:underline;}
