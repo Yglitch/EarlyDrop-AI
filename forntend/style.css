@@ -366,6 +366,10 @@
     font-family:var(--font-mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em;
     color:var(--ink-soft); margin-bottom:16px; display:block;
   }
+  .result-student{
+    font-family:var(--font-display); font-weight:600; font-size:1.15rem;
+    color:var(--ink); margin:0 0 18px;
+  }
   .risk-badge{
     display:inline-flex; align-items:center; gap:10px;
     padding:12px 26px; border-radius:999px;
