@@ -273,9 +273,15 @@
   /* =========================================================
      PREDICTION — plug in your ML model on the backend here.
        POST /api/predict   (Authorization: Bearer <token>)
-       body: { co_curricular, marks, assignment, debtor, displaced, income }
+       body: {
+         name, student_id, age, gender, attendance, scholarship,
+         co_curricular_activities, marks, assignment_submission,
+         debtor, displaced, income
+       }
        -> { risk: 'Low' | 'Medium' | 'High', desc?: string, solutions?: string[] }
 
+     This mirrors the CSV columns you're training on (minus `prediction`,
+     which is the model's output, not an input).
      desc/solutions are optional — if your API doesn't return them,
      the generic copy below is used as a fallback for display only.
   ========================================================= */
@@ -312,13 +318,16 @@
     var label = document.getElementById('risk-label');
     var descEl = document.getElementById('risk-desc');
     var list = document.getElementById('solutions-list');
+    var studentEl = document.getElementById('result-student');
 
     badge.className = 'risk-badge ' + level.toLowerCase();
     label.textContent = level + ' risk';
     descEl.textContent = desc;
+    if(studentEl) studentEl.textContent = data.name + ' · ' + data.student_id;
 
     document.getElementById('stat-marks').textContent = data.marks + '/100';
-    document.getElementById('stat-assignment').textContent = data.assignment;
+    document.getElementById('stat-attendance').textContent = data.attendance + '%';
+    document.getElementById('stat-assignment').textContent = data.assignment_submission;
     document.getElementById('stat-income').textContent = '₹' + data.income.toLocaleString('en-IN');
 
     list.innerHTML = '';
@@ -339,15 +348,24 @@
       e.preventDefault();
 
       var data = {
-        co_curricular: document.getElementById('co_curricular').value,
+        name: document.getElementById('name').value.trim(),
+        student_id: document.getElementById('student_id').value.trim(),
+        age: parseFloat(document.getElementById('age').value),
+        gender: document.getElementById('gender').value,
+        attendance: parseFloat(document.getElementById('attendance').value),
+        scholarship: document.getElementById('scholarship').value,
+        co_curricular_activities: document.getElementById('co_curricular_activities').value,
         marks: parseFloat(document.getElementById('marks').value),
-        assignment: document.getElementById('assignment').value,
+        assignment_submission: document.getElementById('assignment_submission').value,
         debtor: document.getElementById('debtor').value,
         displaced: document.getElementById('displaced').value,
         income: parseFloat(document.getElementById('income').value)
       };
 
-      var valid = data.co_curricular && data.assignment && data.debtor && data.displaced &&
+      var valid = data.name && data.student_id && data.gender && data.scholarship &&
+                  data.co_curricular_activities && data.assignment_submission &&
+                  data.debtor && data.displaced &&
+                  !isNaN(data.age) && !isNaN(data.attendance) &&
                   !isNaN(data.marks) && !isNaN(data.income);
 
       if(!valid){

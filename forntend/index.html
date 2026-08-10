@@ -147,8 +147,50 @@
         <div class="field-grid">
 
           <div class="field">
-            <label for="co_curricular">Co-curricular activities</label>
-            <select id="co_curricular" required>
+            <label for="name">Student name</label>
+            <input id="name" type="text" placeholder="e.g. Rohan Sharma" required>
+          </div>
+
+          <div class="field">
+            <label for="student_id">Student ID</label>
+            <input id="student_id" type="text" placeholder="e.g. S007" required>
+          </div>
+
+          <div class="field">
+            <label for="age">Age</label>
+            <input id="age" type="number" min="10" max="100" placeholder="e.g. 19" required>
+          </div>
+
+          <div class="field">
+            <label for="gender">Gender</label>
+            <select id="gender" required>
+              <option value="" disabled selected>Select</option>
+              <option value="Male">Male_</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="attendance">Attendance</label>
+            <div class="unit-input">
+              <input id="attendance" type="number" min="0" max="100" placeholder="0–100" required>
+              <span>%</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="scholarship">Scholarship</label>
+            <select id="scholarship" required>
+              <option value="" disabled selected>Select</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="co_curricular_activities">Co-curricular activities</label>
+            <select id="co_curricular_activities" required>
               <option value="" disabled selected>Select</option>
               <option value="Yes">Yes</option>
               <option value="No">No</option>
@@ -164,8 +206,8 @@
           </div>
 
           <div class="field">
-            <label for="assignment">Assignment submission</label>
-            <select id="assignment" required>
+            <label for="assignment_submission">Assignment submission</label>
+            <select id="assignment_submission" required>
               <option value="" disabled selected>Select</option>
               <option value="Yes">Yes — all submitted</option>
               <option value="Half">Half — partially submitted</option>
@@ -221,6 +263,7 @@
 
       <div class="result-card">
         <span class="kicker">Result</span>
+        <p class="result-student" id="result-student">—</p>
         <div id="risk-badge" class="risk-badge low">
           <span class="dot"></span>
           <span id="risk-label">Low risk</span>
@@ -229,6 +272,7 @@
 
         <div class="score-strip">
           <div class="metric"><div class="v" id="stat-marks">—</div><div class="l">Marks</div></div>
+          <div class="metric"><div class="v" id="stat-attendance">—</div><div class="l">Attendance</div></div>
           <div class="metric"><div class="v" id="stat-assignment">—</div><div class="l">Assignments</div></div>
           <div class="metric"><div class="v" id="stat-income">—</div><div class="l">Income</div></div>
         </div>
