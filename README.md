@@ -56,34 +56,6 @@ The prediction form collects the following fields for each student:
 
 `prediction` (Low / Medium / High) is the model's **output**, returned by the backend — it isn't collected from the user.
 
-## API endpoints the backend needs to implement
-
-The frontend expects the following REST endpoints:
-
-```
-POST /api/auth/register
-  body: { name, institution, email, password }
-  returns: { token, admin: { id, name, email, institution } }
-
-POST /api/auth/login
-  body: { email, password }
-  returns: { token, admin: { id, name, email, institution } }
-
-POST /api/predict
-  headers: Authorization: Bearer <token>
-  body: { name, student_id, age, gender, attendance, scholarship,
-          co_curricular_activities, marks, assignment_submission,
-          debtor, displaced, income }
-  returns: { risk: "Low" | "Medium" | "High", desc?, solutions? }
-
-GET /api/students/high-risk
-  headers: Authorization: Bearer <token>
-  returns: [{ roll_no, name, contact }, ...]   # scoped to the logged-in admin
-```
-
-All data returned by `/api/students/high-risk` and used by `/api/predict` should be scoped to the authenticated admin (e.g. by `institution_id`), so each admin only ever sees their own students.
-
-## Getting started
 
 ### Frontend
 
