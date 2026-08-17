@@ -17,7 +17,7 @@
 
   /* Pages that require an admin to be logged in. Visiting these while
      logged out redirects to the login page and returns here afterwards. */
-  var AUTH_REQUIRED_PAGES = ['form'];
+  var AUTH_REQUIRED_PAGES = [];// 'form' removed — prediction no longer requires login
   var pendingRedirect = null;
 
   function showPage(name){
@@ -384,11 +384,11 @@
         body: JSON.stringify(data)
       })
       .then(function(res){
-        if(res.status === 401){
-          clearSession();
-          navigateTo('login');
-          throw new Error('Session expired — please log in again.');
-        }
+        // if(res.status === 401){
+        //   Session();
+        //   navigateTo('login');
+        //   throw new Error('Session expired — please log in again.');
+        // }clear
         if(!res.ok) throw new Error('Prediction failed. Please try again.');
         return res.json();
       })
