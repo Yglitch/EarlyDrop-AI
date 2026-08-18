@@ -8,7 +8,7 @@ from model import Student
 from dtos import StudentCreate, StudentUpdate, StudentResponse, StudentListResponse
 
 router = APIRouter(prefix="/students", tags=["Students"])
-
+model = joblib.load("model.pkl")
 
 # ---------- CREATE ----------
 @router.post("/", response_model=StudentResponse, status_code=201)
@@ -80,3 +80,25 @@ def delete_student(student_id: str, db: Session = Depends(get_db)):
     db.delete(student)
     db.commit()
     return None
+
+
+
+@router.post("/predict")
+def predict_dropout(student: StudentData):
+    try:
+        input_data = pd.DataFrame([student.dict()])
+        prediction = model.predict(input_data)[0]
+        
+        probabilities = model.predict_proba(input_data)[0] if hasattr(model, "predict_proba") else None
+        
+        return {
+            "status": "success",
+            "prediction": int(prediction),
+            "is_dropout_risk": bool(prediction == 1),
+            "dropout_probability": float(probabilities[1]) if probabilities is not None else None
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Prediction error: {str(e)}"
+        )
