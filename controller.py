@@ -1,100 +1,85 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+import joblib
+import pandas as pd
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
 
 from database import get_db
 from model import Student
-from dtos import StudentCreate, StudentUpdate, StudentResponse, StudentListResponse
+from dtos import StudentCreate, StudentUpdate, StudentResponse, StudentListResponse, StudentBase
 
 router = APIRouter(prefix="/students", tags=["Students"])
+
+# Load trained model
 model = joblib.load("model.pkl")
 
 # ---------- CREATE ----------
-@router.post("/", response_model=StudentResponse, status_code=201)
+@router.post("/", response_model=StudentResponse, status_code=status.HTTP_201_CREATED)
 def create_student(payload: StudentCreate, db: Session = Depends(get_db)):
-    existing = db.query(Student).filter(Student.student_id == payload.student_id).first()
-    if existing:
-        raise HTTPException(status_code=409, detail="student_id already exists")
-
-    student = Student(**payload.model_dump())
-    db.add(student)
+    db_student = Student(**payload.model_dump())
     try:
+        db.add(db_student)
         db.commit()
+        db.refresh(db_student)
+        return db_student
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Could not create student (integrity error)")
-    db.refresh(student)
-    return student
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Student ID or Email already exists."
+        )
 
-
-# ---------- READ (list, with pagination + optional filter) ----------
+# ---------- READ (list / search / paginate) ----------
 @router.get("/", response_model=StudentListResponse)
 def list_students(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=500),
-    prediction: Optional[str] = None,
-    db: Session = Depends(get_db),
+    page: int = Query(1, ge=1, description="Page number"),
+    size: int = Query(10, ge=1, le=100, description="Items per page"),
+    gender: Optional[str] = Query(None, description="Filter by gender"),
+    search: Optional[str] = Query(None, description="Search by name or student_id"),
+    db: Session = Depends(get_db)
 ):
     query = db.query(Student)
-    if prediction:
-        query = query.filter(Student.prediction == prediction)
+
+    if gender:
+        query = query.filter(Student.gender == gender)
+
+    if search:
+        search_filter = f"%{search}%"
+        query = query.filter(
+            (Student.name.ilike(search_filter)) |
+            (Student.student_id.ilike(search_filter))
+        )
 
     total = query.count()
-    items = query.offset(skip).limit(limit).all()
-    return StudentListResponse(total=total, items=items)
+    students = query.offset((page - 1) * size).limit(size).all()
 
+    return {
+        "total": total,
+        "page": page,
+        "size": size,
+        "items": students
+    }
 
-# ---------- READ (single by student_id) ----------
-@router.get("/{student_id}", response_model=StudentResponse)
-def get_student(student_id: str, db: Session = Depends(get_db)):
-    student = db.query(Student).filter(Student.student_id == student_id).first()
-    if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
-    return student
-
-
-# ---------- UPDATE (partial) ----------
-@router.patch("/{student_id}", response_model=StudentResponse)
-def update_student(student_id: str, payload: StudentUpdate, db: Session = Depends(get_db)):
-    student = db.query(Student).filter(Student.student_id == student_id).first()
-    if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
-
-    update_data = payload.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(student, field, value)
-
-    db.commit()
-    db.refresh(student)
-    return student
-
-
-# ---------- DELETE ----------
-@router.delete("/{student_id}", status_code=204)
-def delete_student(student_id: str, db: Session = Depends(get_db)):
-    student = db.query(Student).filter(Student.student_id == student_id).first()
-    if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
-
-    db.delete(student)
-    db.commit()
-    return None
-
-
-
+# ---------- PREDICT (MUST BE DEFINED BEFORE /{student_id}) ----------
 @router.post("/predict")
-def predict_dropout(student: StudentData):
+def predict_dropout(student: StudentBase):
     try:
-        input_data = pd.DataFrame([student.dict()])
+        data_dict = student.model_dump()
+        
+        # Remove non-feature columns dropped during training
+        data_dict.pop("name", None)
+        data_dict.pop("student_id", None)
+        
+        input_data = pd.DataFrame([data_dict])
         prediction = model.predict(input_data)[0]
         
         probabilities = model.predict_proba(input_data)[0] if hasattr(model, "predict_proba") else None
         
         return {
             "status": "success",
-            "prediction": int(prediction),
-            "is_dropout_risk": bool(prediction == 1),
+            "prediction": int(prediction) if isinstance(prediction, (int, float)) else str(prediction),
+            "is_dropout_risk": bool(prediction == 1 or prediction == "High"),
             "dropout_probability": float(probabilities[1]) if probabilities is not None else None
         }
     except Exception as e:
@@ -102,3 +87,44 @@ def predict_dropout(student: StudentData):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Prediction error: {str(e)}"
         )
+
+# ---------- READ (single by student_id) ----------
+@router.get("/{student_id}", response_model=StudentResponse)
+def get_student(student_id: str, db: Session = Depends(get_db)):
+    student = db.query(Student).filter(Student.student_id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
+    return student
+
+# ---------- UPDATE ----------
+@router.put("/{student_id}", response_model=StudentResponse)
+def update_student(student_id: str, payload: StudentUpdate, db: Session = Depends(get_db)):
+    student = db.query(Student).filter(Student.student_id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
+
+    update_data = payload.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(student, field, value)
+
+    try:
+        db.commit()
+        db.refresh(student)
+        return student
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Update failed. Email or Student ID conflict."
+        )
+
+# ---------- DELETE ----------
+@router.delete("/{student_id}", status_code=status.HTTP_200_OK)
+def delete_student(student_id: str, db: Session = Depends(get_db)):
+    student = db.query(Student).filter(Student.student_id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
+
+    db.delete(student)
+    db.commit()
+    return {"detail": f"Student with ID '{student_id}' has been deleted."}
