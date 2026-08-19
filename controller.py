@@ -4,9 +4,28 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
-
+import joblib
+import pandas as pd
 from database import get_db
 from model import Student
+<<<<<<< HEAD
+from dtos import   StudentResponse,StudentBase , PredictionLevel
+
+router = APIRouter(prefix="/students", tags=["Students"])
+
+model = joblib.load("trained_model.joblib")
+label_encoder = joblib.load("label_encoding.joblib")
+scaler = joblib.load("scaler.joblib")
+
+
+# ---------- predict --------
+
+@router.post("/predict")
+def predict_student(student: StudentBase):
+
+     return {"message":"hello"}
+    
+
 from dtos import StudentCreate, StudentUpdate, StudentResponse, StudentListResponse, StudentBase
 
 router = APIRouter(prefix="/students", tags=["Students"])
@@ -53,6 +72,7 @@ def list_students(
 
     total = query.count()
     students = query.offset((page - 1) * size).limit(size).all()
+>>>>>>> bed7800cb97551b0a28547ce7b033592b6184b25
 
     return {
         "total": total,
@@ -96,6 +116,11 @@ def get_student(student_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
     return student
 
+<<<<<<< HEAD
+
+
+
+=======
 # ---------- UPDATE ----------
 @router.put("/{student_id}", response_model=StudentResponse)
 def update_student(student_id: str, payload: StudentUpdate, db: Session = Depends(get_db)):
@@ -117,6 +142,7 @@ def update_student(student_id: str, payload: StudentUpdate, db: Session = Depend
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Update failed. Email or Student ID conflict."
         )
+>>>>>>> bed7800cb97551b0a28547ce7b033592b6184b25
 
 # ---------- DELETE ----------
 @router.delete("/{student_id}", status_code=status.HTTP_200_OK)
