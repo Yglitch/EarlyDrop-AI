@@ -9,10 +9,15 @@ DB_CONNECTION = os.getenv("DB_CONNECTION")
 
 if not DB_CONNECTION:
     raise ValueError(
-        "DB_CONNECTION is not set. Check /home/yash-rama/EarlyDrop-AI/.env"
+        "DB_CONNECTION is not set. Please set it in your .env file "
+        "(see .env.example / README for the expected format)."
     )
 
-engine = create_engine(DB_CONNECTION, echo=True)
+# SQL echo is noisy and slow for production; opt in via env var instead of
+# hardcoding it on.
+DB_ECHO = os.getenv("DB_ECHO", "false").lower() == "true"
+
+engine = create_engine(DB_CONNECTION, echo=DB_ECHO, pool_pre_ping=True)
 
 SessionLocal = sessionmaker(
     bind=engine,

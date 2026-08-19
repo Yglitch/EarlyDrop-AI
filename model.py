@@ -1,24 +1,9 @@
-from sqlalchemy import Column, Integer, String, Boolean, Enum
-import enum
+from sqlalchemy import Column, Integer, String, Enum
 
 from database import Base  # import the declarative Base from your db.py
-
-
-class YesNo(str, enum.Enum):
-    YES = "Yes"
-    NO = "No"
-
-
-class SubmissionStatus(str, enum.Enum):
-    YES = "Yes"
-    NO = "No"
-    HALF = "Half"
-
-
-class PredictionLevel(str, enum.Enum):
-    LOW = "Low"
-    MEDIUM = "Medium"
-    HIGH = "High"
+from dtos import YesNo, SubmissionStatus, PredictionLevel, GenderEnum
+# Reuse the enums defined in dtos.py instead of redefining them here, so the
+# DB layer and the API layer can never drift out of sync with each other.
 
 
 class Student(Base):
@@ -28,7 +13,7 @@ class Student(Base):
     name = Column(String(100), nullable=False)
     student_id = Column(String(20), unique=True, nullable=False, index=True)
     age = Column(Integer, nullable=False)
-    gender = Column(String(10), nullable=False)
+    gender = Column(Enum(GenderEnum), nullable=False)
     attendance = Column(Integer, nullable=False)  # percentage
     scholarship = Column(Enum(YesNo), nullable=False)
     co_curricular_activities = Column(Enum(YesNo), nullable=False)
