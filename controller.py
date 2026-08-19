@@ -28,28 +28,59 @@ CATEGORICAL_COLUMNS = [
 
 
 def _run_prediction(student: StudentBase) -> dict:
-    """Reproduce the train.ipynb preprocessing pipeline (label-encode ->
-    MinMax scale) before calling the model, then decode the result back to a
-    PredictionLevel label."""
+    """
+    Preprocess student data using the same pipeline used during training:
+    1. Label encode categorical columns
+    2. Convert values to float
+    3. Apply trained MinMaxScaler
+    4. Predict using trained ML model
+    5. Decode prediction back to original label
+    """
+
+    # Get only ML features
     raw = student.model_dump(include=set(FEATURE_COLUMNS))
+
+    # Create DataFrame in exactly the same column order as training
     input_data = pd.DataFrame([raw])[FEATURE_COLUMNS]
 
+    # Label encode categorical features
     for col in CATEGORICAL_COLUMNS:
         encoder = label_encoders[col]
-        # .value stringifies enums (e.g. GenderEnum.MALE -> "Male") to match
-        # the raw string labels the encoder was fit on.
-        raw_value = input_data.at[0, col]
-        value = raw_value.value if hasattr(raw_value, "value") else raw_value
-        input_data.at[0, col] = encoder.transform([value])[0]
 
+        raw_value = input_data.at[0, col]
+
+        # Handle Enum values such as GenderEnum.MALE
+        value = raw_value.value if hasattr(raw_value, "value") else raw_value
+
+        try:
+            input_data.at[0, col] = encoder.transform([value])[0]
+        except ValueError:
+            raise ValueError(
+                f"Unknown value '{value}' for column '{col}'. "
+                f"Expected one of: {list(encoder.classes_)}"
+            )
+
+    # Convert all features to float
     input_data = input_data.astype(float)
+
+    # Apply the scaler fitted during training
     scaled = scaler.transform(input_data)
 
+    # Make prediction
     prediction_encoded = model.predict(scaled)[0]
-    probabilities = model.predict_proba(scaled)[0] if hasattr(model, "predict_proba") else None
 
+    # Get prediction probabilities if supported
+    probabilities = None
+
+    if hasattr(model, "predict_proba"):
+        probabilities = model.predict_proba(scaled)[0].tolist()
+
+    # Decode prediction back to original label
     prediction_encoder = label_encoders["prediction"]
-    prediction_label = prediction_encoder.inverse_transform([prediction_encoded])[0]
+
+    prediction_label = prediction_encoder.inverse_transform(
+        [prediction_encoded]
+    )[0]
 
     return {
         "prediction_label": prediction_label,
@@ -59,34 +90,74 @@ def _run_prediction(student: StudentBase) -> dict:
 
 
 # ---------- CREATE ----------
-@router.post("/", response_model=StudentResponse, status_code=201)
-def create_student(payload: StudentCreate, db: Session = Depends(get_db)):
-    existing = db.query(Student).filter(Student.student_id == payload.student_id).first()
-    if existing:
-        raise HTTPException(status_code=409, detail="student_id already exists")
+@router.post(
+    "/",
+    response_model=StudentResponse,
+    status_code=status.HTTP_201_CREATED
+)
+def create_student(
+    payload: StudentCreate,
+    db: Session = Depends(get_db)
+):
+    # Check whether student_id already exists
+    existing = (
+        db.query(Student)
+        .filter(Student.student_id == payload.student_id)
+        .first()
+    )
 
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="student_id already exists"
+        )
+
+    # Convert Pydantic model to dictionary
     data = payload.model_dump()
+
+    # If prediction was not provided by frontend,
+    # calculate it using the ML model
     if data.get("prediction") is None:
-        # No prediction supplied by the client: compute it ourselves instead
-        # of letting a NULL hit the NOT NULL "prediction" column and surface
-        # as a misleading 409/integrity error.
+
         try:
-            result = _run_prediction(StudentBase(**data))
+            student_data = StudentBase(**data)
+
+            result = _run_prediction(student_data)
+
+            # Save predicted label in database
             data["prediction"] = result["prediction_label"]
+
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e)
+            )
+
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Could not compute prediction for new student: {e}",
+                detail=f"Could not compute prediction: {str(e)}"
             )
 
+    # Create database object
     student = Student(**data)
+
     db.add(student)
+
     try:
         db.commit()
+
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Could not create student (integrity error)")
+
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Could not create student (integrity error)"
+        )
+
+    # Refresh object from database
     db.refresh(student)
+
     return student
 
 
