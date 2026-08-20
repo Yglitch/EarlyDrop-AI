@@ -6,6 +6,7 @@ import joblib
 import pandas as pd
 from database import get_db
 from model import Student
+import traceback
 from dtos import StudentBase, StudentCreate, StudentUpdate, StudentResponse, StudentListResponse
 
 router = APIRouter(prefix="/students", tags=["Students"])
@@ -25,6 +26,14 @@ CATEGORICAL_COLUMNS = [
     "gender", "scholarship", "co_curricular_activities",
     "assignment_submission", "debtor", "displaced",
 ]
+
+from dtos import PredictionLevel
+
+# Order the target LabelEncoder used during training.
+# LabelEncoder.fit() sorts classes alphabetically by default, so for
+# {"High", "Low", "Medium"} this is ["High", "Low", "Medium"].
+# VERIFY against train.ipynb (print(target_encoder.classes_)) and fix if different.
+PREDICTION_CLASSES = ["High", "Low", "Medium"]
 
 
 def _run_prediction(student: StudentBase) -> dict:
@@ -67,98 +76,50 @@ def _run_prediction(student: StudentBase) -> dict:
     scaled = scaler.transform(input_data)
 
     # Make prediction
-    prediction_encoded = model.predict(scaled)[0]
+    prediction_encoded = int(model.predict(scaled)[0])
 
     # Get prediction probabilities if supported
     probabilities = None
-
     if hasattr(model, "predict_proba"):
         probabilities = model.predict_proba(scaled)[0].tolist()
 
-    # Decode prediction back to original label
-    prediction_encoder = label_encoders["prediction"]
-
-    prediction_label = prediction_encoder.inverse_transform(
-        [prediction_encoded]
-    )[0]
+    # Decode prediction back to original label.
+    # No "prediction" key exists in label_encoders (it only holds feature
+    # encoders), so we decode manually using the known target classes.
+    try:
+        prediction_label = PREDICTION_CLASSES[prediction_encoded]
+    except IndexError:
+        raise ValueError(
+            f"Model returned encoded class {prediction_encoded}, which is "
+            f"out of range for PREDICTION_CLASSES={PREDICTION_CLASSES}"
+        )
 
     return {
-        "prediction_label": prediction_label,
-        "prediction_encoded": int(prediction_encoded),
+        "prediction_label": PredictionLevel(prediction_label),
+        "prediction_encoded": prediction_encoded,
         "probabilities": probabilities,
     }
 
 
 # ---------- CREATE ----------
-@router.post(
-    "/",
-    response_model=StudentResponse,
-    status_code=status.HTTP_201_CREATED
-)
-def create_student(
-    payload: StudentCreate,
-    db: Session = Depends(get_db)
-):
-    # Check whether student_id already exists
-    existing = (
-        db.query(Student)
-        .filter(Student.student_id == payload.student_id)
-        .first()
-    )
-
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="student_id already exists"
-        )
-
-    # Convert Pydantic model to dictionary
-    data = payload.model_dump()
-
-    # If prediction was not provided by frontend,
-    # calculate it using the ML model
-    if data.get("prediction") is None:
-
-        try:
-            student_data = StudentBase(**data)
-
-            result = _run_prediction(student_data)
-
-            # Save predicted label in database
-            data["prediction"] = result["prediction_label"]
-
-        except ValueError as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=str(e)
-            )
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Could not compute prediction: {str(e)}"
-            )
-
-    # Create database object
-    student = Student(**data)
-
-    db.add(student)
-
+@router.post("/predict", response_model=StudentResponse)
+def predict_student(data: StudentBase, db: Session = Depends(get_db)):
     try:
-        db.commit()
+        result = _run_prediction(data)
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=400, detail=f"Prediction failed: {e}")
 
-    except IntegrityError:
-        db.rollback()
+    # Save the application + prediction to the database
+    record = Student(
+        **data.model_dump(),
+        prediction=result["prediction_label"],
+    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
 
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Could not create student (integrity error)"
-        )
-
-    # Refresh object from database
-    db.refresh(student)
-
-    return student
+    return StudentResponse.model_validate(record)
 
 
 # ---------- READ (list, with pagination + optional filter) ----------
