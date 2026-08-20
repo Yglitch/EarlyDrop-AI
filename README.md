@@ -1,108 +1,153 @@
-# Early Drop Prediction System
+# Pulse — Early Student Dropout Prediction System
 
-Early Drop is a web app that helps school and college coordinators spot students at risk of dropping out **before** it happens. Admins enter a student's academic and personal signals, a machine learning model scores their dropout risk as **Low / Medium / High**, and the app suggests next steps for outreach.
+Pulse is a machine learning-powered web application and REST API designed for educational institutions to flag students at risk of dropping out early. By analyzing key academic, engagement, and socio-economic signals, Pulse provides actionable risk levels (**Low**, **Medium**, or **High**) to help coordinators and mentors step in before students disengage permanently.
 
-Each admin registers and logs in separately, and only ever sees the students tied to their own institution.
+---
 
-## How it works
+## Key Features
 
-1. An admin registers or logs in.
-2. They fill in a student's details — attendance, marks, assignment submission, financial background, and more.
-3. The form sends that data to the backend, where a trained ML model returns a risk level.
-4. The app shows the risk level along with a description and recommended next steps, and adds the student to the admin's flagged list if the risk is high.
+- **Machine Learning Early Warning**: Predicts student dropout risk using a trained classifier pipeline (`joblib` models with scaling and label encoding).
+- **FastAPI REST API**: Scalable backend endpoints for creating, updating, retrieving, and predicting student risk profiles.
+- **PostgreSQL / Database Integration**: Persistent storage powered by SQLAlchemy with connection pooling and schema management.
+- **Interactive Web Interface**: Single-Page Application (SPA) frontend providing an intuitive form interface, summary metrics, and tailored intervention steps.
+- **Institution-Level Access Control**: Admin authentication and student data isolation for institutional privacy.
+- **Data Profiling & Exploratory Analysis**: Includes dataset statistics and exploratory data analysis artifacts (`EDA.html`).
 
-## Tech stack
+---
 
-| Layer      | Technology |
-|------------|------------|
-| Frontend   | HTML, CSS, vanilla JavaScript |
-| Backend    | Python (Flask / FastAPI) |
-| Database   | PostgreSQL |
-| ML model   | Python (scikit-learn / your model of choice) |
+## Directory & File Structure
 
-The frontend and backend are decoupled — the frontend talks to the backend only through the REST API described below, so the ML model or backend framework can be swapped without touching the UI.
-
-## Project structure
-
+```text
+├── dataset/
+│   └── dataset.csv             # Historical student dataset used for model training
+├── dtos.py                     # Pydantic schemas / Data Transfer Objects (DTOs)
+├── model.py                    # SQLAlchemy database models for Student entity
+├── database.py                 # DB engine setup and session dependency management
+├── main.py / router            # FastAPI application routing and prediction logic
+├── train.ipynb                 # Jupyter notebook used for data preprocessing and model training
+├── trained_model.joblib        # Saved trained Machine Learning model
+├── scaler.joblib               # Saved MinMaxScaler instance for feature normalization
+├── label_encoding.joblib       # Dictionary of fitted LabelEncoders for categorical columns
+├── index.html                  # Frontend Single Page Application (SPA) layout
+├── style.css                   # Modern CSS design system and layout styling
+├── script.js                   # Frontend application controller and API client
+├── EDA.html                    # Generated YData/Pandas profiling report for dataset analysis
+├── .env                        # Environment variables file (database URL, DB echo, etc.)
+└── requirements.txt            # Project Python dependencies
 ```
-early-drop/
-├── frontend/
-│   ├── index.html      # All pages (landing, form, result, about, contact, login, register)
-│   ├── style.css        # Styling
-│   └── script.js         # Routing, auth, form handling, API calls
-├── backend/              # Flask/FastAPI app (Postgres-backed) — add your implementation here
-│   └── ...
-└── README.md
+
+---
+
+## Machine Learning Pipeline & Features
+
+The prediction model processes **10 input features** matching the feature ordering used during model training:
+
+| Feature Field | Type | Description / Range | Categorical Encoding |
+| :--- | :--- | :--- | :--- |
+| `age` | Numerical | Student age (10–100) | N/A |
+| `gender` | Categorical | `Male` / `Female` | Label Encoded |
+| `attendance` | Numerical | Attendance percentage (0–100%) | N/A |
+| `scholarship` | Categorical | `Yes` / `No` | Label Encoded |
+| `co_curricular_activities` | Categorical | `Yes` / `No` | Label Encoded |
+| `marks` | Numerical | Academic score (0–100) | N/A |
+| `assignment_submission` | Categorical | `Yes`, `Half`, `No` | Label Encoded |
+| `debtor` | Categorical | `Yes` / `No` (Outstanding tuition fees) | Label Encoded |
+| `displaced` | Categorical | `Yes` / `No` (Relocated from home region) | Label Encoded |
+| `income` | Numerical | Household annual income | N/A |
+
+### Preprocessing & Prediction Execution Workflow
+1. Raw inputs are extracted and ordered strictly according to `FEATURE_COLUMNS`.
+2. Categorical variables are transformed via fitted `LabelEncoder` instances stored in `label_encoding.joblib`.
+3. Numerical features are normalized using `MinMaxScaler` stored in `scaler.joblib`.
+4. The scaled vector is passed to `trained_model.joblib`.
+5. The model outputs a prediction code which is inverse-transformed back to a human-readable string (`Low`, `Medium`, or `High`).
+
+---
+
+## API Documentation
+
+### Endpoints Overview
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/students/` | Create student record & compute risk level if omitted |
+| `GET` | `/students/` | Paginated list of students with optional `prediction` filter |
+| `GET` | `/students/{student_id}` | Retrieve details for a specific student ID |
+| `PATCH` | `/students/{student_id}` | Update existing student attributes |
+| `DELETE` | `/students/{student_id}` | Remove a student record |
+| `POST` | `/students/predict` | Calculate dropout risk directly without creating DB record |
+
+### Prediction API Payload Example (`POST /students/predict`)
+
+**Request Body:**
+```json
+{
+  "name": "Rohan Sharma",
+  "student_id": "S007",
+  "age": 19,
+  "gender": "Male",
+  "attendance": 85,
+  "scholarship": "No",
+  "co_curricular_activities": "Yes",
+  "marks": 78,
+  "assignment_submission": "Yes",
+  "debtor": "No",
+  "displaced": "No",
+  "income": 120000
+}
 ```
 
-## Input signals
+**Response Example:**
+```json
+{
+  "status": "success",
+  "prediction": "Low",
+  "is_dropout_risk": false,
+  "dropout_probability": 0.12
+}
+```
 
-The prediction form collects the following fields for each student:
+---
 
-| Field | Description |
-|---|---|
-| `name` | Student's full name |
-| `student_id` | Student ID / roll number |
-| `age` | Student's age |
-| `gender` | Male / Female / Other |
-| `attendance` | Attendance percentage (0–100) |
-| `scholarship` | Whether the student holds a scholarship (Yes/No) |
-| `co_curricular_activities` | Participation in co-curricular activities (Yes/No) |
-| `marks` | Academic marks (0–100) |
-| `assignment_submission` | Assignment submission status (Yes / Half / No) |
-| `debtor` | Whether the student has an outstanding fee balance (Yes/No) |
-| `displaced` | Whether the student is relocated from their home region (Yes/No) |
-| `income` | Annual household income |
+## Installation & Setup Guide
 
-`prediction` (Low / Medium / High) is the model's **output**, returned by the backend — it isn't collected from the user.
+### 1. Prerequisites
+- Python 3.9+
+- PostgreSQL or SQLite database
 
-
-### Frontend
-
-The frontend is static — no build step required.
-
+### 2. Setup Virtual Environment & Dependencies
 ```bash
-cd frontend
-python3 -m http.server 5500
-```
+# Clone the repository
+git clone <repository-url>
+cd pulse-prediction-system
 
-Then open `http://localhost:5500` in your browser.
+# Create and activate virtual environment
+python -m venv lenv
+source lenv/bin/activate  # On Windows: lenv\Scripts\activate
 
-By default, API calls in `script.js` go to the same origin the frontend is served from. If your backend runs elsewhere, update `API_BASE` at the top of `script.js`:
-
-```js
-var API_BASE = 'https://your-backend-url.com';
-```
-
-### Backend (to be added)
-
-```bash
-cd backend
-python3 -m venv venv
-source venv/bin/activate
+# Install required dependencies
 pip install -r requirements.txt
-# configure your Postgres connection (e.g. via a .env file)
-flask run   # or: uvicorn main:app --reload
 ```
 
-### Database
+### 3. Environment Configuration
+Create a `.env` file in the root directory:
+```env
+DB_CONNECTION=postgresql://username:password@localhost:5432/pulse_db
+DB_ECHO=false
+```
 
-PostgreSQL is used to store:
-- Admin accounts (with hashed passwords)
-- Student records and their prediction history, scoped per admin/institution
+### 4. Running the Backend Server
+```bash
+uvicorn main:app --reload --port 8000
+```
+The FastAPI interactive documentation (Swagger UI) will be accessible at `http://127.0.0.1:8000/docs`.
 
-## Roadmap
+### 5. Accessing the Web Frontend
+Open `index.html` directly in your browser or serve it using a local static web server. Ensure `API_BASE` in `script.js` points to your backend URL.
 
-- [ ] Implement backend auth (`/api/auth/register`, `/api/auth/login`) with hashed passwords and JWT tokens
-- [ ] Plug in the trained ML model behind `/api/predict`
-- [ ] Implement `/api/students/high-risk` with per-admin scoping
-- [ ] Add password reset / email verification
-- [ ] Deploy backend + frontend
+---
 
-## License
+## License & Advisory
 
-TBD.
-
-## Contributing
-
-Issues and pull requests are welcome. If you're adding a new input signal or endpoint, please update this README to match.
+- **Educational Purpose**: Designed for early intervention and academic counseling workflows.
+- **Advisory Notice**: Predictions generated by this system are indicative. Institutional staff should verify metrics before taking intervention measures.
