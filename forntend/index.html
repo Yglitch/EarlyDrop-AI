@@ -30,29 +30,6 @@
       <a href="#about" data-nav="about">About</a>
       <a href="#contact" data-nav="contact">Contact</a>
     </nav>
-    <div class="profile-menu">
-      <button type="button" class="profile-btn" id="profile-btn" aria-haspopup="true" aria-expanded="false" aria-label="Account">
-        <span class="avatar" id="profile-avatar">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/>
-            <path d="M4 20c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-          </svg>
-        </span>
-      </button>
-      <div class="profile-dropdown" id="profile-dropdown">
-        <div id="profile-guest">
-          <a href="#login" data-nav="login" class="dropdown-item">Log in</a>
-          <a href="#register" data-nav="register" class="dropdown-item">Register</a>
-        </div>
-        <div id="profile-user" style="display:none;">
-          <div class="dropdown-user">
-            <span class="name" id="profile-name">—</span>
-            <span class="email" id="profile-email"></span>
-          </div>
-          <button type="button" class="dropdown-item" id="logout-btn">Log out</button>
-        </div>
-      </div>
-    </div>
   </div>
 </header>
 
@@ -89,21 +66,19 @@
           </button>
         </div>
 
-        <!-- High risk table card (scoped to the logged-in admin's own students) -->
+        <!-- High risk table card — populated from GET /students/?prediction=High -->
         <div class="card table-card">
           <span class="card-label">High risk students <span class="count" id="high-risk-count">— flagged</span></span>
 
-          <div class="locked-msg" id="high-risk-locked">
-            <p>Log in to view the students flagged for your institution.</p>
-            <a href="#login" class="btn btn-ghost btn-block" data-nav="login">Log in</a>
-          </div>
+          <p class="locked-msg" id="high-risk-empty" style="display:none;">No high-risk students yet — run a prediction to see them show up here.</p>
+          <p class="locked-msg" id="high-risk-error" style="display:none;">Couldn't reach the API. Make sure the backend is running.</p>
 
-          <table class="risk-table" id="high-risk-table" style="display:none;">
+          <table class="risk-table" id="high-risk-table">
             <thead>
-              <tr><th>Roll no.</th><th>Name</th><th>Contact no.</th></tr>
+              <tr><th>Roll no.</th><th>Name</th><th>Marks</th></tr>
             </thead>
             <tbody id="high-risk-body">
-              <!-- populated from /api/students/high-risk after login -->
+              <!-- populated from GET /students/?prediction=High -->
             </tbody>
           </table>
         </div>
@@ -365,80 +340,6 @@
           </div>
         </div>
       </div>
-    </div>
-  </div>
-</main>
-
-<!-- =========================================================
-     PAGE 6 — LOGIN
-========================================================= -->
-<main id="page-login" class="page">
-  <div class="form-shell">
-    <div class="form-card" style="max-width:440px;">
-      <a href="#landing" class="back-link" data-nav="landing">← Home</a>
-      <span class="kicker" style="margin-top:18px;">Admin sign in</span>
-      <h1>Log in</h1>
-      <p class="sub">Access your institution's dashboard and flagged students.</p>
-
-      <form id="login-form" novalidate>
-        <div class="field-grid" style="grid-template-columns:1fr;">
-          <div class="field">
-            <label for="login-email">Email</label>
-            <input id="login-email" type="email" placeholder="you@institution.edu" required>
-          </div>
-          <div class="field">
-            <label for="login-password">Password</label>
-            <input id="login-password" type="password" placeholder="••••••••" required>
-          </div>
-        </div>
-        <div class="form-actions">
-          <button class="btn btn-primary btn-block" type="submit">Log in</button>
-        </div>
-        <div class="error-msg" id="login-error">Check your email and password and try again.</div>
-      </form>
-
-      <p class="auth-switch">Don't have an account? <a href="#register" data-nav="register">Register</a></p>
-    </div>
-  </div>
-</main>
-
-<!-- =========================================================
-     PAGE 7 — REGISTER
-========================================================= -->
-<main id="page-register" class="page">
-  <div class="form-shell">
-    <div class="form-card" style="max-width:440px;">
-      <a href="#landing" class="back-link" data-nav="landing">← Home</a>
-      <span class="kicker" style="margin-top:18px;">Create admin account</span>
-      <h1>Register</h1>
-      <p class="sub">Each admin only sees the students tied to their own institution.</p>
-
-      <form id="register-form" novalidate>
-        <div class="field-grid" style="grid-template-columns:1fr;">
-          <div class="field">
-            <label for="register-name">Full name</label>
-            <input id="register-name" type="text" placeholder="Your name" required>
-          </div>
-          <div class="field">
-            <label for="register-institution">Institution</label>
-            <input id="register-institution" type="text" placeholder="Your school or college" required>
-          </div>
-          <div class="field">
-            <label for="register-email">Email</label>
-            <input id="register-email" type="email" placeholder="you@institution.edu" required>
-          </div>
-          <div class="field">
-            <label for="register-password">Password</label>
-            <input id="register-password" type="password" placeholder="Min. 8 characters" required>
-          </div>
-        </div>
-        <div class="form-actions">
-          <button class="btn btn-primary btn-block" type="submit">Create account</button>
-        </div>
-        <div class="error-msg" id="register-error">Please fill in every field (password min. 8 characters).</div>
-      </form>
-
-      <p class="auth-switch">Already have an account? <a href="#login" data-nav="login">Log in</a></p>
     </div>
   </div>
 </main>

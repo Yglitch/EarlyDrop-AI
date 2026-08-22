@@ -1,24 +1,20 @@
 (function(){
 
-  /* Point this at your backend. Leave empty ('') if the API is served
-     from the same origin as this frontend. */
-  var API_BASE = '';
+  /* Point this at your FastAPI backend. Leave empty ('') if the API is
+     served from the same origin as this frontend (e.g. both behind one
+     reverse proxy). Otherwise set it to e.g. 'http://localhost:8000' —
+     note the backend currently has no CORS middleware configured, so a
+     different-origin frontend will need that added to main.py first. */
+  var API_BASE = 'http://localhost:8000';
 
   var pages = {
     landing: document.getElementById('page-landing'),
     form: document.getElementById('page-form'),
     result: document.getElementById('page-result'),
     about: document.getElementById('page-about'),
-    contact: document.getElementById('page-contact'),
-    login: document.getElementById('page-login'),
-    register: document.getElementById('page-register')
+    contact: document.getElementById('page-contact')
   };
   var navLinks = document.querySelectorAll('nav.primary a[data-nav], footer .footer-links a[data-nav]');
-
-  /* Pages that require an admin to be logged in. Visiting these while
-     logged out redirects to the login page and returns here afterwards. */
-  var AUTH_REQUIRED_PAGES = [];// 'form' removed — prediction no longer requires login
-  var pendingRedirect = null;
 
   function showPage(name){
     Object.keys(pages).forEach(function(key){
@@ -33,23 +29,14 @@
 
   function routeFromHash(){
     var hash = window.location.hash.replace('#','') || 'landing';
-    if(AUTH_REQUIRED_PAGES.indexOf(hash) !== -1 && !isLoggedIn()){
-      pendingRedirect = hash;
-      showPage('login');
-      return;
-    }
     if(pages[hash]) showPage(hash);
     else showPage('landing');
   }
 
-  /* Navigate directly instead of only relying on the hashchange event.
-     Also enforces the auth gate above. */
+  /* Navigate directly instead of only relying on the hashchange event —
+     fixes nav links doing nothing when the hash isn't actually changing. */
   function navigateTo(target){
     if(!pages[target]) return;
-    if(AUTH_REQUIRED_PAGES.indexOf(target) !== -1 && !isLoggedIn()){
-      pendingRedirect = target;
-      target = 'login';
-    }
     if(window.location.hash.replace('#','') === target){
       showPage(target);
     } else {
@@ -70,220 +57,62 @@
   window.addEventListener('hashchange', routeFromHash);
 
   /* =========================================================
-     ADMIN AUTH
-     Talks to your backend (Postgres-backed) at:
-       POST /api/auth/register  { name, institution, email, password } -> { token, admin }
-       POST /api/auth/login     { email, password }                    -> { token, admin }
-     Swap API_BASE / paths above to match your actual backend routes.
-  ========================================================= */
-  var TOKEN_KEY = 'pulse_token';
-  var ADMIN_KEY = 'pulse_admin';
-
-  function getToken(){ return localStorage.getItem(TOKEN_KEY); }
-  function getAdmin(){
-    try{ return JSON.parse(localStorage.getItem(ADMIN_KEY)); }
-    catch(e){ return null; }
-  }
-  function isLoggedIn(){ return !!getToken(); }
-
-  function setSession(token, admin){
-    localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(ADMIN_KEY, JSON.stringify(admin || {}));
-    updateProfileUI();
-  }
-  function clearSession(){
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(ADMIN_KEY);
-    updateProfileUI();
-  }
-
-  function updateProfileUI(){
-    var admin = getAdmin();
-    var guestEl = document.getElementById('profile-guest');
-    var userEl = document.getElementById('profile-user');
-    var avatar = document.getElementById('profile-avatar');
-
-    if(admin && isLoggedIn()){
-      if(guestEl) guestEl.style.display = 'none';
-      if(userEl) userEl.style.display = 'block';
-      var nameEl = document.getElementById('profile-name');
-      var emailEl = document.getElementById('profile-email');
-      if(nameEl) nameEl.textContent = admin.name || 'Admin';
-      if(emailEl) emailEl.textContent = admin.email || '';
-      if(avatar) avatar.textContent = (admin.name || 'A').trim().charAt(0).toUpperCase();
-    } else {
-      if(guestEl) guestEl.style.display = 'block';
-      if(userEl) userEl.style.display = 'none';
-      if(avatar) avatar.innerHTML = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
-        '<circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/>' +
-        '<path d="M4 20c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
-    }
-  }
-
-  /* Profile dropdown open/close */
-  var profileBtn = document.getElementById('profile-btn');
-  var profileDropdown = document.getElementById('profile-dropdown');
-  if(profileBtn && profileDropdown){
-    profileBtn.addEventListener('click', function(e){
-      e.stopPropagation();
-      var open = profileDropdown.classList.toggle('open');
-      profileBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    });
-    profileDropdown.addEventListener('click', function(e){ e.stopPropagation(); });
-    document.addEventListener('click', function(){
-      profileDropdown.classList.remove('open');
-      profileBtn.setAttribute('aria-expanded', 'false');
-    });
-    document.addEventListener('keydown', function(e){
-      if(e.key === 'Escape') profileDropdown.classList.remove('open');
-    });
-  }
-
-  var logoutBtn = document.getElementById('logout-btn');
-  if(logoutBtn){
-    logoutBtn.addEventListener('click', function(){
-      clearSession();
-      navigateTo('landing');
-    });
-  }
-
-  /* Login */
-  var loginForm = document.getElementById('login-form');
-  var loginError = document.getElementById('login-error');
-  if(loginForm){
-    loginForm.addEventListener('submit', function(e){
-      e.preventDefault();
-      var email = document.getElementById('login-email').value.trim();
-      var password = document.getElementById('login-password').value;
-
-      if(!email || !password){
-        loginError.textContent = 'Enter your email and password.';
-        loginError.classList.add('show');
-        return;
-      }
-      loginError.classList.remove('show');
-
-      fetch(API_BASE + '/api/auth/login', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({email: email, password: password})
-      })
-      .then(function(res){
-        if(!res.ok) throw new Error('Invalid email or password.');
-        return res.json();
-      })
-      .then(function(data){
-        // Expected shape: { token: '...', admin: { id, name, email, institution } }
-        setSession(data.token, data.admin);
-        loginForm.reset();
-        var target = pendingRedirect || 'landing';
-        pendingRedirect = null;
-        navigateTo(target);
-      })
-      .catch(function(err){
-        loginError.textContent = err.message || 'Log in failed — check your details and try again.';
-        loginError.classList.add('show');
-      });
-    });
-  }
-
-  /* Register */
-  var registerForm = document.getElementById('register-form');
-  var registerError = document.getElementById('register-error');
-  if(registerForm){
-    registerForm.addEventListener('submit', function(e){
-      e.preventDefault();
-      var name = document.getElementById('register-name').value.trim();
-      var institution = document.getElementById('register-institution').value.trim();
-      var email = document.getElementById('register-email').value.trim();
-      var password = document.getElementById('register-password').value;
-
-      if(!name || !institution || !email || password.length < 8){
-        registerError.classList.add('show');
-        return;
-      }
-      registerError.classList.remove('show');
-
-      fetch(API_BASE + '/api/auth/register', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({name: name, institution: institution, email: email, password: password})
-      })
-      .then(function(res){
-        if(!res.ok) return res.json().then(function(body){ throw new Error(body.message || 'Registration failed.'); });
-        return res.json();
-      })
-      .then(function(data){
-        // Expected shape: { token: '...', admin: { id, name, email, institution } }
-        setSession(data.token, data.admin);
-        registerForm.reset();
-        navigateTo('landing');
-      })
-      .catch(function(err){
-        registerError.textContent = err.message || 'Registration failed. Try a different email.';
-        registerError.classList.add('show');
-      });
-    });
-  }
-
-  /* =========================================================
-     HIGH-RISK STUDENTS TABLE (scoped to the logged-in admin)
-       GET /api/students/high-risk   (Authorization: Bearer <token>)
-       -> [{ roll_no, name, contact }, ...]
+     HIGH-RISK STUDENTS TABLE
+       GET {API_BASE}/students/?prediction=High&limit=10
+       -> { total: number, items: StudentResponse[] }
+     (matches controller.py's list_students — no auth required)
   ========================================================= */
   function loadHighRiskStudents(){
-    var lockedMsg = document.getElementById('high-risk-locked');
+    var emptyMsg = document.getElementById('high-risk-empty');
+    var errorMsg = document.getElementById('high-risk-error');
     var table = document.getElementById('high-risk-table');
     var body = document.getElementById('high-risk-body');
     var countEl = document.getElementById('high-risk-count');
     if(!body) return;
 
-    if(!isLoggedIn()){
-      if(lockedMsg) lockedMsg.style.display = 'block';
-      if(table) table.style.display = 'none';
-      if(countEl) countEl.textContent = '— flagged';
-      return;
-    }
+    if(emptyMsg) emptyMsg.style.display = 'none';
+    if(errorMsg) errorMsg.style.display = 'none';
+    if(table) table.style.display = '';
 
-    fetch(API_BASE + '/api/students/high-risk', {
-      headers: {'Authorization': 'Bearer ' + getToken()}
-    })
-    .then(function(res){
-      if(res.status === 401){ clearSession(); return []; }
-      if(!res.ok) throw new Error('Could not load students.');
-      return res.json();
-    })
-    .then(function(students){
-      students = students || [];
-      body.innerHTML = '';
-      students.forEach(function(s){
-        var tr = document.createElement('tr');
-        tr.innerHTML = '<td>' + s.roll_no + '</td><td class="name">' + s.name + '</td><td>' + s.contact + '</td>';
-        body.appendChild(tr);
+    fetch(API_BASE + '/students/?prediction=High&limit=10')
+      .then(function(res){
+        if(!res.ok) throw new Error('Could not load students.');
+        return res.json();
+      })
+      .then(function(data){
+        var students = (data && data.items) || [];
+        body.innerHTML = '';
+        students.forEach(function(s){
+          var tr = document.createElement('tr');
+          tr.innerHTML = '<td>' + s.student_id + '</td><td class="name">' + s.name + '</td><td>' + s.marks + '</td>';
+          body.appendChild(tr);
+        });
+        if(countEl) countEl.textContent = (data.total || students.length) + ' flagged';
+        if(students.length === 0){
+          if(table) table.style.display = 'none';
+          if(emptyMsg) emptyMsg.style.display = 'block';
+        }
+      })
+      .catch(function(){
+        if(countEl) countEl.textContent = '— flagged';
+        if(table) table.style.display = 'none';
+        if(errorMsg) errorMsg.style.display = 'block';
       });
-      if(lockedMsg) lockedMsg.style.display = 'none';
-      if(table) table.style.display = '';
-      if(countEl) countEl.textContent = students.length + ' flagged';
-    })
-    .catch(function(){
-      if(countEl) countEl.textContent = '— flagged';
-    });
   }
 
   /* =========================================================
-     PREDICTION — plug in your ML model on the backend here.
-       POST /api/predict   (Authorization: Bearer <token>)
+     PREDICTION
+       POST {API_BASE}/students/predict
        body: {
          name, student_id, age, gender, attendance, scholarship,
          co_curricular_activities, marks, assignment_submission,
          debtor, displaced, income
        }
-       -> { risk: 'Low' | 'Medium' | 'High', desc?: string, solutions?: string[] }
+       -> StudentResponse, including "prediction": "Low" | "Medium" | "High"
 
-     This mirrors the CSV columns you're training on (minus `prediction`,
-     which is the model's output, not an input).
-     desc/solutions are optional — if your API doesn't return them,
-     the generic copy below is used as a fallback for display only.
+     controller.py's /predict endpoint doesn't return a description or
+     next-step suggestions — just the saved record + prediction — so the
+     copy below fills that in for display purposes only.
   ========================================================= */
   var fallbackCopy = {
     Low: {
@@ -350,7 +179,7 @@
       var data = {
         name: document.getElementById('name').value.trim(),
         student_id: document.getElementById('student_id').value.trim(),
-        age: parseFloat(document.getElementById('age').value),
+        age: parseInt(document.getElementById('age').value, 10),
         gender: document.getElementById('gender').value,
         attendance: parseFloat(document.getElementById('attendance').value),
         scholarship: document.getElementById('scholarship').value,
@@ -375,27 +204,23 @@
       }
       errorBox.classList.remove('show');
 
-      fetch(API_BASE + '/api/predict', {
+      fetch(API_BASE + '/students/predict', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + getToken()
-        },
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(data)
       })
       .then(function(res){
-        // if(res.status === 401){
-        //   Session();
-        //   navigateTo('login');
-        //   throw new Error('Session expired — please log in again.');
-        // }clear
-        if(!res.ok) throw new Error('Prediction failed. Please try again.');
+        if(!res.ok){
+          return res.json()
+            .then(function(body){ throw new Error(body.detail || 'Prediction failed. Please try again.'); })
+            .catch(function(){ throw new Error('Prediction failed. Please try again.'); });
+        }
         return res.json();
       })
       .then(function(result){
-        var level = result.risk;
+        var level = result.prediction;
         var fallback = fallbackCopy[level] || fallbackCopy.Low;
-        renderResult(level, result.desc || fallback.desc, result.solutions || fallback.solutions, data);
+        renderResult(level, fallback.desc, fallback.solutions, data);
       })
       .catch(function(err){
         errorBox.textContent = err.message || 'Could not reach the prediction service.';
@@ -404,7 +229,7 @@
     });
   }
 
-  /* Contact form (placeholder — wire this to your backend/email service too) */
+  /* Contact form — purely client-side for now, no backend endpoint exists for this yet */
   var contactForm = document.getElementById('contact-form');
   var contactSuccess = document.getElementById('contact-success');
   if(contactForm){
@@ -433,6 +258,5 @@
   }
 
   /* ---- init ---- */
-  updateProfileUI();
   routeFromHash();
 })();
