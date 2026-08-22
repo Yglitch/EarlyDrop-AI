@@ -169,27 +169,10 @@ def update_student(student_id: str, payload: StudentUpdate, db: Session = Depend
 def delete_student(student_id: str, db: Session = Depends(get_db)):
     student = db.query(Student).filter(Student.student_id == student_id).first()
     if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
+        raise HTTPException(status_code=404, detail="Invalid Student found")
 
     db.delete(student)
     db.commit()
     return None
 
 
-@router.post("/predict")
-def predict_dropout(student: StudentBase, db: Session = Depends(get_db)):
-    try:
-        result = _run_prediction(student)
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Prediction error: {str(e)}"
-        )
-
-    probabilities = result["probabilities"]
-    return {
-        "status": "success",
-        "prediction": result["prediction_label"],
-        "is_dropout_risk": result["prediction_label"] == "High",
-        "dropout_probability": float(max(probabilities)) if probabilities is not None else None,
-    }
