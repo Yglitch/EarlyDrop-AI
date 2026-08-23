@@ -57,6 +57,87 @@
   window.addEventListener('hashchange', routeFromHash);
 
   /* =========================================================
+     STUDENT SEARCH (header)
+       GET {API_BASE}/students/{student_id}
+       -> StudentResponse on success
+       -> 404 { detail: "Student not found" } if no match
+     (matches controller.py's get_student — no auth required)
+  ========================================================= */
+  var searchForm = document.getElementById('student-search-form');
+  var searchInput = document.getElementById('student-search-input');
+  var searchResults = document.getElementById('search-results');
+
+  function closeSearchResults(){
+    if(searchResults){
+      searchResults.classList.remove('open');
+      searchResults.innerHTML = '';
+    }
+  }
+
+  function renderSearchResult(student){
+    var badgeClass = (student.prediction || 'low').toLowerCase();
+    searchResults.innerHTML =
+      '<div class="sr-title">' +
+        '<h4>' + student.name + '</h4>' +
+        '<button type="button" class="sr-close" aria-label="Close">✕</button>' +
+      '</div>' +
+      '<div class="sr-row"><span class="k">Student ID</span><span class="v">' + student.student_id + '</span></div>' +
+      '<div class="sr-row"><span class="k">Prediction</span><span class="v risk-pill ' + badgeClass + '">' + student.prediction + '</span></div>' +
+      '<div class="sr-row"><span class="k">Marks</span><span class="v">' + student.marks + ' / 100</span></div>' +
+      '<div class="sr-row"><span class="k">Attendance</span><span class="v">' + student.attendance + '%</span></div>';
+    searchResults.classList.add('open');
+
+    var closeBtn = searchResults.querySelector('.sr-close');
+    if(closeBtn) closeBtn.addEventListener('click', closeSearchResults);
+  }
+
+  function renderSearchEmpty(message){
+    searchResults.innerHTML =
+      '<div class="sr-title"><h4>Not found</h4><button type="button" class="sr-close" aria-label="Close">✕</button></div>' +
+      '<p class="sr-empty">' + message + '</p>';
+    searchResults.classList.add('open');
+
+    var closeBtn = searchResults.querySelector('.sr-close');
+    if(closeBtn) closeBtn.addEventListener('click', closeSearchResults);
+  }
+
+  function runStudentSearch(){
+    var id = searchInput.value.trim();
+    if(!id){ closeSearchResults(); return; }
+
+    fetch(API_BASE + '/students/' + encodeURIComponent(id))
+      .then(function(res){
+        if(res.status === 404) return null; // handled below as "not found"
+        if(!res.ok) throw new Error('Search failed. Please try again.');
+        return res.json();
+      })
+      .then(function(student){
+        if(student) renderSearchResult(student);
+        else renderSearchEmpty('No student found with ID "' + id + '".');
+      })
+      .catch(function(err){
+        renderSearchEmpty(err.message || 'Could not reach the server.');
+      });
+  }
+
+  if(searchForm){
+    searchForm.addEventListener('submit', function(e){
+      e.preventDefault();
+      runStudentSearch();
+    });
+  }
+
+  // Close the dropdown when clicking anywhere outside it
+  document.addEventListener('click', function(e){
+    if(!searchResults) return;
+    var clickedInsideSearch = e.target.closest('.search');
+    if(!clickedInsideSearch) closeSearchResults();
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') closeSearchResults();
+  });
+
+  /* =========================================================
      HIGH-RISK STUDENTS TABLE
        GET {API_BASE}/students/?prediction=High&limit=10
        -> { total: number, items: StudentResponse[] }
