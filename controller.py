@@ -62,7 +62,7 @@ def _run_prediction(student: StudentBase) -> dict:
         value = raw_value.value if hasattr(raw_value, "value") else raw_value
 
         try:
-            input_data.at[0, col] = encoder.transform([value])[0]
+            input_data.at[0, col] = str(encoder.transform([value])[0])
         except ValueError:
             raise ValueError(
                 f"Unknown value '{value}' for column '{col}'. "
