@@ -23,36 +23,16 @@
       Pulse
     </a>
     <div class="search">
-      <input type="text" placeholder="Search student, roll no." aria-label="Search students">
+      <form id="student-search-form" autocomplete="off">
+        <input id="student-search-input" type="text" placeholder="Search student by ID (e.g. S007)" aria-label="Search students by ID">
+      </form>
+      <div class="search-results" id="search-results"></div>
     </div>
     <nav class="primary" aria-label="Primary">
       <a href="#landing" class="current" data-nav="landing">Home</a>
       <a href="#about" data-nav="about">About</a>
       <a href="#contact" data-nav="contact">Contact</a>
     </nav>
-    <div class="profile-menu">
-      <button type="button" class="profile-btn" id="profile-btn" aria-haspopup="true" aria-expanded="false" aria-label="Account">
-        <span class="avatar" id="profile-avatar">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/>
-            <path d="M4 20c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-          </svg>
-        </span>
-      </button>
-      <div class="profile-dropdown" id="profile-dropdown">
-        <div id="profile-guest">
-          <a href="#login" data-nav="login" class="dropdown-item">Log in</a>
-          <a href="#register" data-nav="register" class="dropdown-item">Register</a>
-        </div>
-        <div id="profile-user" style="display:none;">
-          <div class="dropdown-user">
-            <span class="name" id="profile-name">—</span>
-            <span class="email" id="profile-email"></span>
-          </div>
-          <button type="button" class="dropdown-item" id="logout-btn">Log out</button>
-        </div>
-      </div>
-    </div>
   </div>
 </header>
 
@@ -89,21 +69,19 @@
           </button>
         </div>
 
-        <!-- High risk table card (scoped to the logged-in admin's own students) -->
+        <!-- High risk table card — populated from GET /students/?prediction=High -->
         <div class="card table-card">
           <span class="card-label">High risk students <span class="count" id="high-risk-count">— flagged</span></span>
 
-          <div class="locked-msg" id="high-risk-locked">
-            <p>Log in to view the students flagged for your institution.</p>
-            <a href="#login" class="btn btn-ghost btn-block" data-nav="login">Log in</a>
-          </div>
+          <p class="locked-msg" id="high-risk-empty" style="display:none;">No high-risk students yet — run a prediction to see them show up here.</p>
+          <p class="locked-msg" id="high-risk-error" style="display:none;">Couldn't reach the API. Make sure the backend is running.</p>
 
-          <table class="risk-table" id="high-risk-table" style="display:none;">
+          <table class="risk-table" id="high-risk-table">
             <thead>
-              <tr><th>Roll no.</th><th>Name</th><th>Contact no.</th></tr>
+              <tr><th>Roll no.</th><th>Name</th><th>Marks</th></tr>
             </thead>
             <tbody id="high-risk-body">
-              <!-- populated from /api/students/high-risk after login -->
+              <!-- populated from GET /students/?prediction=High -->
             </tbody>
           </table>
         </div>
@@ -340,11 +318,11 @@
             <div class="field-grid" style="grid-template-columns:1fr; gap:16px; margin-bottom:20px;">
               <div class="field">
                 <label for="contact-name">Your Name</label>
-                <input type="text" id="contact-name" placeholder="John Doe" required>
+                <input type="text" id="contact-name" placeholder="saarthak sajwan" required>
               </div>
               <div class="field">
                 <label for="contact-email">Email Address</label>
-                <input type="email" id="contact-email" placeholder="john@institution.edu" required>
+                <input type="email" id="contact-email" placeholder="sajwansarthak@gmail.com" required>
               </div>
               <div class="field">
                 <label for="contact-message">Message</label>
@@ -352,7 +330,7 @@
               </div>
             </div>
             <button class="btn btn-primary" type="submit">Send Message</button>
-            <div class="success-msg" id="contact-success" style="display:none; color:var(--risk-low); font-size:0.85rem; margin-top:12px; background:var(--risk-low-bg); padding:10px 14px; border-radius:8px;">Thank you! Your message has been sent successfully.</div>
+            <div class="success-msg" id="contact-success" style="display:none; color:var(--risk-low); font-size:0.85rem; margin-top:12px; background:var(--risk-low-bg); padding:10px 14px; border-radius:8px;">Thank you! Your message has  sent successfully.</div>
           </form>
         </div>
 
@@ -360,85 +338,11 @@
           <h3 style="font-family:var(--font-display); font-size:1.2rem; margin-top:0;">Direct Inquiries</h3>
           <p style="color:var(--ink-soft); font-size:0.9rem; line-height:1.6; margin-bottom:20px;">You can also reach our core team directly via email or check our code repositories online.</p>
           <div style="display:flex; flex-direction:column; gap:10px; font-size:0.9rem;">
-            <a href="mailto:hello@pulse-predict.app" style="color:var(--accent); text-decoration:none; font-weight:600;">hello@pulse-predict.app</a>
-            <a href="https://github.com" target="_blank" rel="noopener" style="color:var(--ink); text-decoration:none;">GitHub Repository</a>
+            <a href="sajwansarthak0@gmail.com" style="color:var(--accent); text-decoration:none; font-weight:600;">Gmail</a>
+            <a href="https://github.com/Yglitch/EarlyDrop-AI.git" target="_blank" rel="noopener" style="color:var(--ink); text-decoration:none;">Github</a>
           </div>
         </div>
       </div>
-    </div>
-  </div>
-</main>
-
-<!-- =========================================================
-     PAGE 6 — LOGIN
-========================================================= -->
-<main id="page-login" class="page">
-  <div class="form-shell">
-    <div class="form-card" style="max-width:440px;">
-      <a href="#landing" class="back-link" data-nav="landing">← Home</a>
-      <span class="kicker" style="margin-top:18px;">Admin sign in</span>
-      <h1>Log in</h1>
-      <p class="sub">Access your institution's dashboard and flagged students.</p>
-
-      <form id="login-form" novalidate>
-        <div class="field-grid" style="grid-template-columns:1fr;">
-          <div class="field">
-            <label for="login-email">Email</label>
-            <input id="login-email" type="email" placeholder="you@institution.edu" required>
-          </div>
-          <div class="field">
-            <label for="login-password">Password</label>
-            <input id="login-password" type="password" placeholder="••••••••" required>
-          </div>
-        </div>
-        <div class="form-actions">
-          <button class="btn btn-primary btn-block" type="submit">Log in</button>
-        </div>
-        <div class="error-msg" id="login-error">Check your email and password and try again.</div>
-      </form>
-
-      <p class="auth-switch">Don't have an account? <a href="#register" data-nav="register">Register</a></p>
-    </div>
-  </div>
-</main>
-
-<!-- =========================================================
-     PAGE 7 — REGISTER
-========================================================= -->
-<main id="page-register" class="page">
-  <div class="form-shell">
-    <div class="form-card" style="max-width:440px;">
-      <a href="#landing" class="back-link" data-nav="landing">← Home</a>
-      <span class="kicker" style="margin-top:18px;">Create admin account</span>
-      <h1>Register</h1>
-      <p class="sub">Each admin only sees the students tied to their own institution.</p>
-
-      <form id="register-form" novalidate>
-        <div class="field-grid" style="grid-template-columns:1fr;">
-          <div class="field">
-            <label for="register-name">Full name</label>
-            <input id="register-name" type="text" placeholder="Your name" required>
-          </div>
-          <div class="field">
-            <label for="register-institution">Institution</label>
-            <input id="register-institution" type="text" placeholder="Your school or college" required>
-          </div>
-          <div class="field">
-            <label for="register-email">Email</label>
-            <input id="register-email" type="email" placeholder="you@institution.edu" required>
-          </div>
-          <div class="field">
-            <label for="register-password">Password</label>
-            <input id="register-password" type="password" placeholder="Min. 8 characters" required>
-          </div>
-        </div>
-        <div class="form-actions">
-          <button class="btn btn-primary btn-block" type="submit">Create account</button>
-        </div>
-        <div class="error-msg" id="register-error">Please fill in every field (password min. 8 characters).</div>
-      </form>
-
-      <p class="auth-switch">Already have an account? <a href="#login" data-nav="login">Log in</a></p>
     </div>
   </div>
 </main>
@@ -469,13 +373,16 @@
         <div class="footer-col">
           <h4>Contact</h4>
           <a href="#contact" data-nav="contact">Contact form</a>
-          <a href="mailto:hello@pulse-predict.app">Gmail</a>
+          <a href="sajwansarthak0@gmail.com">Gmail</a>
         </div>
         <div class="footer-col">
           <h4>Elsewhere</h4>
-          <a href="https://github.com" target="_blank" rel="noopener">GitHub</a>
-          <a href="https://linkedin.com" target="_blank" rel="noopener">LinkedIn</a>
-          <a href="https://instagram.com" target="_blank" rel="noopener">Instagram</a>
+          <a href="https://github.com/saarthak911" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://www.linkedin.com/in/adarsh-gusain-668411328/" target="_blank" rel="noopener">LinkedIn-Adarsh</a>
+          <a href="https://www.linkedin.com/in/yash-rana-36606a340/" target="_blank" rel="noopener">LinkedIn-Yash</a>
+          <a href="https://www.linkedin.com/in/saarthak-sajwan-338ba13b4/" target="_blank" rel="noopener">LinkedIn-Saarthak</a>
+          <a href="https://www.instagram.com/yashhh_rana2003?utm_source=ig_web_button_share_sheet&igsi=ZDNlZDc0MzIxNw==" target="_blank" rel="noopener">Instagram-Yash</a>
+          <a href="https://www.instagram.com/_sarthak0_7?igsi=MWI2eGVpZHYxaW05ag==" target="_blank" rel="noopener">Instagram-Saarthak</a>
         </div>
       </div>
     </div>

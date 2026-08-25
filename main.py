@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-
+from fastapi.middleware.cors import CORSMiddleware
 from database import Base, engine
 from controller import router as student_router
 
@@ -11,6 +11,13 @@ app = FastAPI(
     title="Student Prediction Record API",
     description="API for managing student records and their scholarship/dropout risk predictions",
     version="1.0.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],          # tighten to your actual frontend URL later
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(student_router)
