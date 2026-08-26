@@ -1,16 +1,12 @@
 (function(){
 
-  /* Point this at your FastAPI backend. Leave empty ('') if the API is
-     served from the same origin as this frontend (e.g. both behind one
-     reverse proxy). Otherwise set it to e.g. 'http://localhost:8000' —
-     note the backend currently has no CORS middleware configured, so a
-     different-origin frontend will need that added to main.py first. */
   var API_BASE = 'http://localhost:8000';
 
   var pages = {
     landing: document.getElementById('page-landing'),
     form: document.getElementById('page-form'),
     result: document.getElementById('page-result'),
+    history: document.getElementById('page-history'),
     about: document.getElementById('page-about'),
     contact: document.getElementById('page-contact')
   };
@@ -25,6 +21,7 @@
     });
     window.scrollTo({top:0, behavior:'auto'});
     if(name === 'landing') loadHighRiskStudents();
+    if(name === 'history') loadHistoryStudents();
   }
 
   function routeFromHash(){
@@ -33,8 +30,6 @@
     else showPage('landing');
   }
 
-  /* Navigate directly instead of only relying on the hashchange event —
-     fixes nav links doing nothing when the hash isn't actually changing. */
   function navigateTo(target){
     if(!pages[target]) return;
     if(window.location.hash.replace('#','') === target){
@@ -58,10 +53,6 @@
 
   /* =========================================================
      STUDENT SEARCH (header)
-       GET {API_BASE}/students/{student_id}
-       -> StudentResponse on success
-       -> 404 { detail: "Student not found" } if no match
-     (matches controller.py's get_student — no auth required)
   ========================================================= */
   var searchForm = document.getElementById('student-search-form');
   var searchInput = document.getElementById('student-search-input');
@@ -107,7 +98,7 @@
 
     fetch(API_BASE + '/students/' + encodeURIComponent(id))
       .then(function(res){
-        if(res.status === 404) return null; // handled below as "not found"
+        if(res.status === 404) return null;
         if(!res.ok) throw new Error('Search failed. Please try again.');
         return res.json();
       })
@@ -127,7 +118,6 @@
     });
   }
 
-  // Close the dropdown when clicking anywhere outside it
   document.addEventListener('click', function(e){
     if(!searchResults) return;
     var clickedInsideSearch = e.target.closest('.search');
@@ -139,9 +129,6 @@
 
   /* =========================================================
      HIGH-RISK STUDENTS TABLE
-       GET {API_BASE}/students/?prediction=High&limit=10
-       -> { total: number, items: StudentResponse[] }
-     (matches controller.py's list_students — no auth required)
   ========================================================= */
   function loadHighRiskStudents(){
     var emptyMsg = document.getElementById('high-risk-empty');
@@ -182,18 +169,52 @@
   }
 
   /* =========================================================
-     PREDICTION
-       POST {API_BASE}/students/predict
-       body: {
-         name, student_id, age, gender, attendance, scholarship,
-         co_curricular_activities, marks, assignment_submission,
-         debtor, displaced, income
-       }
-       -> StudentResponse, including "prediction": "Low" | "Medium" | "High"
+     HISTORY TABLE
+       GET {API_BASE}/students/?limit=50
+  ========================================================= */
+  function loadHistoryStudents(){
+    var emptyMsg = document.getElementById('history-empty');
+    var errorMsg = document.getElementById('history-error');
+    var table = document.getElementById('history-table');
+    var body = document.getElementById('history-body');
+    if(!body) return;
 
-     controller.py's /predict endpoint doesn't return a description or
-     next-step suggestions — just the saved record + prediction — so the
-     copy below fills that in for display purposes only.
+    if(emptyMsg) emptyMsg.style.display = 'none';
+    if(errorMsg) errorMsg.style.display = 'none';
+    if(table) table.style.display = '';
+
+    fetch(API_BASE + '/students/?limit=50')
+      .then(function(res){
+        if(!res.ok) throw new Error('Could not load history.');
+        return res.json();
+      })
+      .then(function(data){
+        var students = (data && data.items) || [];
+        body.innerHTML = '';
+        students.forEach(function(s){
+          var badgeClass = (s.prediction || 'low').toLowerCase();
+          var tr = document.createElement('tr');
+          tr.innerHTML = 
+            '<td>' + s.student_id + '</td>' +
+            '<td class="name">' + s.name + '</td>' +
+            '<td>' + s.marks + '</td>' +
+            '<td>' + s.attendance + '%</td>' +
+            '<td><span class="risk-pill ' + badgeClass + '">' + s.prediction + '</span></td>';
+          body.appendChild(tr);
+        });
+        if(students.length === 0){
+          if(table) table.style.display = 'none';
+          if(emptyMsg) emptyMsg.style.display = 'block';
+        }
+      })
+      .catch(function(){
+        if(table) table.style.display = 'none';
+        if(errorMsg) errorMsg.style.display = 'block';
+      });
+  }
+
+  /* =========================================================
+     PREDICTION
   ========================================================= */
   var fallbackCopy = {
     Low: {
@@ -310,7 +331,7 @@
     });
   }
 
-  /* Contact form — purely client-side for now, no backend endpoint exists for this yet */
+  /* Contact form */
   var contactForm = document.getElementById('contact-form');
   var contactSuccess = document.getElementById('contact-success');
   if(contactForm){
