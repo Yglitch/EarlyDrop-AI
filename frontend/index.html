@@ -8,13 +8,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script>
-  /* Applies saved/system theme before first paint to avoid a flash.
-     Kept separate from script.js on purpose — this only sets a
-     data-theme attribute for CSS and doesn't touch app logic. */
   (function(){
     try{
       var saved = localStorage.getItem('pulse-theme');
-      var theme = saved === 'dark' ? 'dark' : 'light'; /* light is default */
+      var theme = saved === 'dark' ? 'dark' : 'light';
       document.documentElement.setAttribute('data-theme', theme);
     }catch(e){
       document.documentElement.setAttribute('data-theme', 'light');
@@ -44,6 +41,7 @@
     </div>
     <nav class="primary" aria-label="Primary">
       <a href="#landing" class="current" data-nav="landing">Home</a>
+      <a href="#history" data-nav="history">History</a>
       <a href="#about" data-nav="about">About</a>
       <a href="#contact" data-nav="contact">Contact</a>
     </nav>
@@ -63,14 +61,12 @@
      PAGE 1 — LANDING
 ========================================================= -->
 <main id="page-landing" class="page active">
-
   <section class="hero-band">
     <div class="wrap">
       <span class="eyebrow"><span class="pulse-dot"></span> Early Drop Prediction System</span>
 
       <div class="grid-3">
-
-        <!-- Chart card (Power BI slot) -->
+        <!-- Chart card -->
         <div class="card chart-card">
           <span class="card-label">Drop-risk distribution</span>
           <div class="chart-placeholder">
@@ -92,7 +88,7 @@
           </button>
         </div>
 
-        <!-- High risk table card — populated from GET /students/?prediction=High -->
+        <!-- High risk table card -->
         <div class="card table-card">
           <span class="card-label">High risk students <span class="count" id="high-risk-count">— flagged</span></span>
 
@@ -103,12 +99,9 @@
             <thead>
               <tr><th>Roll no.</th><th>Name</th><th>Marks</th></tr>
             </thead>
-            <tbody id="high-risk-body">
-              <!-- populated from GET /students/?prediction=High -->
-            </tbody>
+            <tbody id="high-risk-body"></tbody>
           </table>
         </div>
-
       </div>
 
       <div class="section-divider"></div>
@@ -146,22 +139,18 @@
 
       <form id="predict-form" novalidate>
         <div class="field-grid">
-
           <div class="field">
             <label for="name">Student name</label>
             <input id="name" type="text" placeholder="e.g. Rohan Sharma" required>
           </div>
-
           <div class="field">
             <label for="student_id">Student ID</label>
             <input id="student_id" type="text" placeholder="e.g. S007" required>
           </div>
-
           <div class="field">
             <label for="age">Age</label>
             <input id="age" type="number" min="10" max="100" placeholder="e.g. 19" required>
           </div>
-
           <div class="field">
             <label for="gender">Gender</label>
             <select id="gender" required>
@@ -171,7 +160,6 @@
               <option value="Other">Other</option>
             </select>
           </div>
-
           <div class="field">
             <label for="attendance">Attendance</label>
             <div class="unit-input">
@@ -179,7 +167,6 @@
               <span>%</span>
             </div>
           </div>
-
           <div class="field">
             <label for="scholarship">Scholarship</label>
             <select id="scholarship" required>
@@ -188,7 +175,6 @@
               <option value="No">No</option>
             </select>
           </div>
-
           <div class="field">
             <label for="co_curricular_activities">Co-curricular activities</label>
             <select id="co_curricular_activities" required>
@@ -197,7 +183,6 @@
               <option value="No">No</option>
             </select>
           </div>
-
           <div class="field">
             <label for="marks">Marks</label>
             <div class="unit-input">
@@ -205,7 +190,6 @@
               <span>/ 100</span>
             </div>
           </div>
-
           <div class="field">
             <label for="assignment_submission">Assignment submission</label>
             <select id="assignment_submission" required>
@@ -215,7 +199,6 @@
               <option value="No">No — not submitted</option>
             </select>
           </div>
-
           <div class="field">
             <label for="debtor">Debtor</label>
             <select id="debtor" required>
@@ -225,7 +208,6 @@
             </select>
             <span class="hint">Outstanding fee balance</span>
           </div>
-
           <div class="field">
             <label for="displaced">Displaced</label>
             <select id="displaced" required>
@@ -235,7 +217,6 @@
             </select>
             <span class="hint">Relocated from home region</span>
           </div>
-
           <div class="field">
             <label for="income">Household income</label>
             <div class="unit-input">
@@ -243,7 +224,6 @@
               <span>₹ / yr</span>
             </div>
           </div>
-
         </div>
 
         <div class="form-actions">
@@ -261,7 +241,6 @@
 <main id="page-result" class="page">
   <div class="result-shell">
     <div class="result-col">
-
       <div class="result-card">
         <span class="kicker">Result</span>
         <p class="result-student" id="result-student">—</p>
@@ -282,9 +261,7 @@
       <div class="solutions-card">
         <span class="kicker">Solutions</span>
         <h2>Recommended next steps</h2>
-        <ul class="solutions-list" id="solutions-list">
-          <!-- populated by JS -->
-        </ul>
+        <ul class="solutions-list" id="solutions-list"></ul>
       </div>
 
       <div class="result-actions">
@@ -296,7 +273,39 @@
 </main>
 
 <!-- =========================================================
-     PAGE 4 — ABOUT (Dedicated Page)
+     PAGE 4 — HISTORY (Dedicated Page)
+========================================================= -->
+<main id="page-history" class="page">
+  <div class="static-page">
+    <div class="wrap">
+      <a href="#landing" class="back-link" data-nav="landing">← Home</a>
+      <span class="page-title-kicker" style="margin-top:12px; display:block; font-family:var(--font-mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--accent);">Records</span>
+      <h1 class="page-title" style="font-family:var(--font-display); font-size:2.4rem; font-weight:600; margin:4px 0 16px;">Prediction History</h1>
+      <p class="page-lead" style="font-size:1.05rem; color:var(--ink-soft); max-width:60ch; line-height:1.7; margin-bottom:32px;">Overview of recent student evaluations and predicted risk levels.</p>
+
+      <div class="card table-card" style="padding:28px;">
+        <p class="locked-msg" id="history-empty" style="display:none;">No prediction history available yet.</p>
+        <p class="locked-msg" id="history-error" style="display:none;">Could not load history. Make sure your backend API is accessible.</p>
+        
+        <table class="risk-table" id="history-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Marks</th>
+              <th>Attendance</th>
+              <th>Risk Level</th>
+            </tr>
+          </thead>
+          <tbody id="history-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- =========================================================
+     PAGE 5 — ABOUT
 ========================================================= -->
 <main id="page-about" class="page">
   <div class="static-page">
@@ -325,7 +334,7 @@
 </main>
 
 <!-- =========================================================
-     PAGE 5 — CONTACT (Dedicated Page)
+     PAGE 6 — CONTACT
 ========================================================= -->
 <main id="page-contact" class="page">
   <div class="static-page">
@@ -353,7 +362,7 @@
               </div>
             </div>
             <button class="btn btn-primary" type="submit">Send Message</button>
-            <div class="success-msg" id="contact-success" style="display:none; color:var(--risk-low); font-size:0.85rem; margin-top:12px; background:var(--risk-low-bg); padding:10px 14px; border-radius:8px;">Thank you! Your message has  sent successfully.</div>
+            <div class="success-msg" id="contact-success" style="display:none; color:var(--risk-low); font-size:0.85rem; margin-top:12px; background:var(--risk-low-bg); padding:10px 14px; border-radius:8px;">Thank you! Your message has sent successfully.</div>
           </form>
         </div>
 
@@ -361,7 +370,7 @@
           <h3 style="font-family:var(--font-display); font-size:1.2rem; margin-top:0;">Direct Inquiries</h3>
           <p style="color:var(--ink-soft); font-size:0.9rem; line-height:1.6; margin-bottom:20px;">You can also reach our core team directly via email or check our code repositories online.</p>
           <div style="display:flex; flex-direction:column; gap:10px; font-size:0.9rem;">
-            <a href="sajwansarthak0@gmail.com" style="color:var(--accent); text-decoration:none; font-weight:600;">Gmail</a>
+            <a href="mailto:sajwansarthak0@gmail.com" style="color:var(--accent); text-decoration:none; font-weight:600;">Gmail</a>
             <a href="https://github.com/Yglitch/EarlyDrop-AI.git" target="_blank" rel="noopener" style="color:var(--ink); text-decoration:none;">Github</a>
           </div>
         </div>
@@ -390,13 +399,14 @@
         <div class="footer-col">
           <h4>Product</h4>
           <a href="#landing" data-nav="landing">Home</a>
+          <a href="#history" data-nav="history">History</a>
           <a href="#about" data-nav="about">About</a>
           <a href="#" id="footer-terms">Terms &amp; Conditions</a>
         </div>
         <div class="footer-col">
           <h4>Contact</h4>
           <a href="#contact" data-nav="contact">Contact form</a>
-          <a href="sajwansarthak0@gmail.com">Gmail</a>
+          <a href="mailto:sajwansarthak0@gmail.com">Gmail</a>
         </div>
         <div class="footer-col">
           <h4>Elsewhere</h4>
@@ -404,8 +414,6 @@
           <a href="https://www.linkedin.com/in/adarsh-gusain-668411328/" target="_blank" rel="noopener">LinkedIn-Adarsh</a>
           <a href="https://www.linkedin.com/in/yash-rana-36606a340/" target="_blank" rel="noopener">LinkedIn-Yash</a>
           <a href="https://www.linkedin.com/in/saarthak-sajwan-338ba13b4/" target="_blank" rel="noopener">LinkedIn-Saarthak</a>
-          <a href="https://www.instagram.com/yashhh_rana2003?utm_source=ig_web_button_share_sheet&igsi=ZDNlZDc0MzIxNw==" target="_blank" rel="noopener">Instagram-Yash</a>
-          <a href="https://www.instagram.com/_sarthak0_7?igsi=MWI2eGVpZHYxaW05ag==" target="_blank" rel="noopener">Instagram-Saarthak</a>
         </div>
       </div>
     </div>
@@ -417,7 +425,6 @@
 </footer>
 
 <script>
-  /* Theme toggle — standalone, doesn't modify or depend on script.js */
   (function(){
     var btn = document.getElementById('theme-toggle');
     if(!btn) return;
